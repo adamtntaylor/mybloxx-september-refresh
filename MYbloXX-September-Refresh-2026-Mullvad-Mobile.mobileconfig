@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>PayloadContent</key>
+  <array>
+    <dict>
+      <key>PayloadDisplayName</key>
+      <string>MYbloXX September Refresh — Global HTTP Proxy</string>
+      <key>PayloadIdentifier</key>
+      <string>com.adamtntaylor.mybloxx.september2026.proxy</string>
+      <key>PayloadType</key>
+      <string>com.apple.proxy.http.global</string>
+      <key>PayloadUUID</key>
+      <string>8D9D965D-8B58-4B65-BB2E-5CCDB86809B3</string>
+      <key>PayloadVersion</key>
+      <integer>1</integer>
+      <key>ProxyType</key>
+      <string>Auto</string>
+      <key>ProxyPACURL</key>
+      <string>https://raw.githubusercontent.com/adamtntaylor/mybloxx-september-refresh/main/mybloxx-september-refresh.pac</string>
+      <key>ProxyPACFallbackAllowed</key>
+      <true/>
+      <key>ProxyCaptiveLoginAllowed</key>
+      <true/>
+    </dict>
+    <dict>
+      <key>PayloadDisplayName</key>
+      <string>MYbloXX September Refresh — Encrypted DNS</string>
+      <key>PayloadIdentifier</key>
+      <string>com.adamtntaylor.mybloxx.september2026.dns</string>
+      <key>PayloadType</key>
+      <string>com.apple.dnsSettings.managed</string>
+      <key>PayloadUUID</key>
+      <string>6BB68B82-6D74-4825-8FA0-D9FD05B4BB71</string>
+      <key>PayloadVersion</key>
+      <integer>1</integer>
+      <key>DNSSettings</key>
+      <dict>
+        <key>DNSProtocol</key>
+        <string>HTTPS</string>
+        <key>ServerURL</key>
+        <string>https://cloudflare-dns.com/dns-query</string>
+        <key>AllowFailover</key>
+        <true/>
+      </dict>
+      <key>ProhibitDisablement</key>
+      <false/>
+    </dict>
+  </array>
+  <key>PayloadDescription</key>
+  <string>September 2026 refresh of the MYbloXX-style supervised iOS blocker. Uses a remote PAC built from OISD Small, Mullvad custom ad/tracker rules, and AdGuard Mobile, with shop.tiktok.com explicitly allowed. Includes user-disableable encrypted DNS.</string>
+  <key>PayloadDisplayName</key>
+  <string>MYbloXX September Refresh 2026 — Mullvad Mobile</string>
+  <key>PayloadIdentifier</key>
+  <string>com.adamtntaylor.mybloxx.september2026.profile</string>
+  <key>PayloadOrganization</key>
+  <string>MYbloXX September Refresh</string>
+  <key>PayloadRemovalDisallowed</key>
+  <false/>
+  <key>PayloadScope</key>
+  <string>System</string>
+  <key>PayloadType</key>
+  <string>Configuration</string>
+  <key>PayloadUUID</key>
+  <string>F516B1F4-C9B8-4F8D-BA3A-868D57A06B62</string>
+  <key>PayloadVersion</key>
+  <integer>1</integer>
+</dict>
+</plist>

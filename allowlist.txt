@@ -1,0 +1,2 @@
+# Explicit PAC allowlist. Matches this host and its subdomains.
+shop.tiktok.com

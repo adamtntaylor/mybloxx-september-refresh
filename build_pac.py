@@ -5,164 +5,150 @@ import re
 import urllib.request
 
 SOURCES = [
-    # Compact, actively maintained mobile/browser-oriented base.
-    "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/ultimate.mini-onlydomains.txt",
-    # Mullvad's own current custom ad/tracker additions.
+    "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/light-onlydomains.txt",
     "https://raw.githubusercontent.com/mullvad/dns-blocklists/main/files/adblock",
     "https://raw.githubusercontent.com/mullvad/dns-blocklists/main/files/tracker",
 ]
 
-# High-confidence ad hosts that must remain covered even if an upstream list changes.
 REQUIRED_BLOCK_DOMAINS = {
     "doubleclick.net",
     "googlesyndication.com",
     "googleadservices.com",
+    "googletagservices.com",
     "adservice.google.com",
     "2mdn.net",
 }
 
-MIN_BLOCKED_DOMAINS = 10000
-DOMAIN = re.compile(
-    r"^(?:[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?\.)+[a-z0-9][a-z0-9_-]{0,62}$",
+TOKEN = re.compile(
+    r'(^|[.\-_])'
+    r'(ad(?:s|server|service|system|network|tech|exchange|form|roll|mob|nxs|colony|cash|push|click|vert|ver|v)?'
+    r'|track(?:er|ing)?|analytics?|telemetry|metrics?|pixel|beacon|sponsor|promo|affiliate|affiliat'
+    r'|impression|rtb|ssp|dsp|bid|criteo|taboola|outbrain|doubleclick|googlesyndication'
+    r'|googleadservices|appsflyer|adjust|branch|amplitude|mixpanel|segment)'
+    r'([.\-_]|$)',
     re.I,
 )
 
+DOMAIN = re.compile(r'^(?:[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?\.)+[a-z0-9][a-z0-9_-]{0,62}$', re.I)
+MIN_FRESH = 2500
+MAX_PAC_BYTES = 300000
+
 def fetch(url):
-    req = urllib.request.Request(
-        url,
-        headers={
-            "User-Agent": "MYbloXX-September-Refresh/2.0",
-            "Cache-Control": "no-cache",
-        },
-    )
+    req = urllib.request.Request(url, headers={
+        "User-Agent": "MYbloXX-September-Refresh-Compact/1.0",
+        "Cache-Control": "no-cache",
+    })
     with urllib.request.urlopen(req, timeout=120) as r:
         data = r.read().decode("utf-8", "replace")
     if not data.strip():
-        raise RuntimeError(f"Source returned empty content: {url}")
+        raise RuntimeError(f"Empty source: {url}")
     return data
 
-def parse(text):
+def normalize(raw):
+    s = raw.strip().lower()
+    if not s or s.startswith(("#", "!", ";")):
+        return None
+    if s.startswith("||"):
+        s = s[2:].split("^", 1)[0].split("$", 1)[0]
+    parts = s.split()
+    if len(parts) >= 2 and parts[0] in ("0.0.0.0", "127.0.0.1", "::1"):
+        s = parts[1]
+    if s.startswith("*."):
+        s = s[2:]
+    if "*" in s or "/" in s or ":" in s:
+        return None
+    s = s.strip(".")
+    return s if DOMAIN.fullmatch(s) else None
+
+def parse_all(text):
     out = set()
     for raw in text.splitlines():
-        s = raw.strip().lower()
-        if not s or s.startswith(("#", "!", ";")):
-            continue
-
-        # Adblock-style hostname rule.
-        if s.startswith("||"):
-            s = s[2:]
-            s = s.split("^", 1)[0].split("$", 1)[0]
-
-        # Hosts-file style rule.
-        parts = s.split()
-        if len(parts) >= 2 and parts[0] in ("0.0.0.0", "127.0.0.1", "::1"):
-            s = parts[1]
-
-        if s.startswith("*."):
-            s = s[2:]
-
-        # Ignore URL/path/regex rules; PAC host matching is domain-based.
-        if "*" in s or "/" in s or ":" in s:
-            continue
-
-        s = s.split("^", 1)[0].split("$", 1)[0].strip(".")
-        if DOMAIN.fullmatch(s):
-            out.add(s)
+        d = normalize(raw)
+        if d:
+            out.add(d)
     return out
 
-def minimize(domains):
-    # If a parent is blocked, its subdomains do not need separate entries.
-    kept = set()
-    for d in sorted(domains, key=lambda x: (x.count("."), x)):
-        parts = d.split(".")
-        has_parent = any(
-            ".".join(parts[i:]) in kept
-            for i in range(1, len(parts) - 1)
-        )
-        if not has_parent:
-            kept.add(d)
-    return sorted(kept)
+def parse_allowlist(path):
+    if not path.exists():
+        return set()
+    return parse_all(path.read_text(encoding="utf-8"))
 
-def covered(domain, domains):
-    domain = domain.lower().strip(".")
-    if domain in domains:
-        return True
-    parts = domain.split(".")
-    return any(".".join(parts[i:]) in domains for i in range(1, len(parts) - 1))
+legacy_path = pathlib.Path("legacy-mybloxx-base.pac")
+if not legacy_path.exists():
+    raise RuntimeError("Missing legacy-mybloxx-base.pac")
 
-allow_path = pathlib.Path("allowlist.txt")
-allow = parse(allow_path.read_text(encoding="utf-8")) if allow_path.exists() else set()
+legacy = legacy_path.read_text(encoding="utf-8")
+allow = parse_allowlist(pathlib.Path("allowlist.txt"))
 
-domains = set()
-source_counts = {}
-for url in SOURCES:
-    parsed = parse(fetch(url))
-    source_counts[url] = len(parsed)
-    domains |= parsed
+hagezi = parse_all(fetch(SOURCES[0]))
+fresh = {d for d in hagezi if TOKEN.search(d)}
 
-domains |= REQUIRED_BLOCK_DOMAINS
-domains -= allow
-domains = set(minimize(domains))
+for url in SOURCES[1:]:
+    fresh |= parse_all(fetch(url))
 
-# Hard fail instead of ever publishing an empty/useless PAC.
-if len(domains) < MIN_BLOCKED_DOMAINS:
-    raise RuntimeError(
-        f"Refusing to publish: only {len(domains):,} blocked domains were generated "
-        f"(minimum {MIN_BLOCKED_DOMAINS:,}). Source counts: {source_counts}"
-    )
+fresh |= REQUIRED_BLOCK_DOMAINS
+fresh -= allow
 
-if not covered("g.doubleclick.net", domains):
-    raise RuntimeError("Refusing to publish: g.doubleclick.net is not covered.")
+if len(fresh) < MIN_FRESH:
+    raise RuntimeError(f"Refusing to publish: only {len(fresh):,} fresh domains selected.")
 
-if "shop.tiktok.com" not in allow:
-    raise RuntimeError("Refusing to publish: shop.tiktok.com is missing from allowlist.")
+fresh_obj = "var FRESH={" + ",".join(repr(d)+":1" for d in sorted(fresh)) + "};"
+helper = (
+    "function freshMatch(h){if(FRESH[h])return true;var p=h.indexOf(\".\");"
+    "while(p>0){h=h.substring(p+1);if(FRESH[h])return true;p=h.indexOf(\".\");}return false;}"
+)
 
-block = "{" + ",".join(repr(d) + ":1" for d in sorted(domains)) + "}"
-allowed = "{" + ",".join(repr(d) + ":1" for d in sorted(allow)) + "}"
+marker = 'var MYbloXX="PROXY 127.0.0.1:8021";var ALLOW="DIRECT";var BYPASS="PROXY 8.8.8.8:53";'
+replacement = (
+    'var MYbloXX="PROXY 127.0.0.1:8021";var ALLOW="DIRECT";'
+    'var BYPASS="PROXY 127.0.0.1:8021";' + fresh_obj + helper
+)
+
+if marker not in legacy:
+    raise RuntimeError("Legacy PAC marker not found.")
+pac = legacy.replace(marker, replacement, 1)
+
+anchor = 'function FindProxyForURL(url,host){var u=url.toLowerCase();var h=host.toLowerCase();'
+if anchor not in pac:
+    raise RuntimeError("Legacy FindProxyForURL anchor not found.")
+
+allow_checks = []
+for d in sorted(allow):
+    allow_checks.append(f'h=="{d}"||dnsDomainIs(h,".{d}")')
+allow_expr = "||".join(allow_checks) or "false"
+
 stamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+inject = (
+    anchor
+    + f'if({allow_expr})return ALLOW;'
+    + 'if(freshMatch(h))return MYbloXX;'
+)
+pac = pac.replace(anchor, inject, 1)
 
-pac = f"""// MYbloXX September Refresh 2026 — validated mobile PAC
-// Generated: {stamp}
-// Sources: HaGeZi Ultimate mini + Mullvad custom adblock/tracker lists.
-// Explicit exception: shop.tiktok.com
-// Blocked domains after parent-domain minimization: {len(domains)}
-var BLOCK={block};
-var ALLOW={allowed};
-var BLOCKED="PROXY 127.0.0.1:8021";
-var DIRECT="DIRECT";
+header = (
+    "//\n"
+    "// MYbloXX September Refresh 2026 — Compact\n"
+    f"// Generated: {stamp}\n"
+    f"// Current compact additions: {len(fresh):,} domains from HaGeZi LIGHT + Mullvad custom rules.\n"
+    "// Explicit allowlist is evaluated before every block rule.\n"
+    "//\n"
+)
+# Replace only the opening legacy comment block.
+pac = re.sub(
+    r'^//\n// MYbloXX by MYXXdev \(Default\)\n// Updated:[^\n]*\n// Support Development:[^\n]*\n//',
+    header,
+    pac,
+    count=1,
+)
 
-function suffixMatch(t,h){{
-  if(t[h]) return true;
-  var p=h.indexOf(".");
-  while(p>0){{
-    h=h.substring(p+1);
-    if(t[h]) return true;
-    p=h.indexOf(".");
-  }}
-  return false;
-}}
-
-function localHost(h){{
-  if(!h || isPlainHostName(h)) return true;
-  if(h=="localhost" || dnsDomainIs(h,".local") || dnsDomainIs(h,".lan") || dnsDomainIs(h,".home.arpa")) return true;
-  if(/^127\./.test(h) || /^10\./.test(h) || /^192\.168\./.test(h)) return true;
-  var m=/^172\.(\d+)\./.exec(h);
-  return !!(m && Number(m[1])>=16 && Number(m[1])<=31);
-}}
-
-function FindProxyForURL(url,host){{
-  host=(host||"").toLowerCase().replace(/\.$/,"");
-  if(localHost(host)) return DIRECT;
-  if(suffixMatch(ALLOW,host)) return DIRECT;
-  if(suffixMatch(BLOCK,host)) return BLOCKED;
-  return DIRECT;
-}}
-"""
+size = len(pac.encode("utf-8"))
+if size > MAX_PAC_BYTES:
+    raise RuntimeError(f"Refusing to publish: compact PAC grew to {size:,} bytes.")
+if "doubleclick.net" not in pac:
+    raise RuntimeError("Refusing to publish: doubleclick.net missing.")
+if "shop.tiktok.com" not in pac:
+    raise RuntimeError("Refusing to publish: shop.tiktok.com allowlist missing.")
 
 pathlib.Path("mybloxx-september-refresh.pac").write_text(pac, encoding="utf-8")
-
-print(f"Wrote {len(domains):,} blocked domains.")
-for url, count in source_counts.items():
-    print(f"  {count:,} parsed from {url}")
-print(f"Allowlist: {', '.join(sorted(allow))}")
-print("Verified: g.doubleclick.net is BLOCKED; shop.tiktok.com is DIRECT.")
+print(f"Wrote compact PAC: {size:,} bytes, {len(fresh):,} current domains.")
+print("Verified: DoubleClick covered; shop.tiktok.com explicitly allowed.")

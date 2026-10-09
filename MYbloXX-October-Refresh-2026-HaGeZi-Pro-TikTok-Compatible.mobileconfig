@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>PayloadDisplayName</key>
+	<string>MYbloXX October Refresh 2026 — HaGeZi Pro (TikTok Compatible)</string>
+	<key>PayloadIdentifier</key>
+	<string>io.local.mybloxx.october2026.hagezi.pro.profile</string>
+	<key>PayloadUUID</key>
+	<string>73DA9CB3-7C9B-4F25-85F3-74D5FB247B12</string>
+	<key>PayloadVersion</key>
+	<integer>1</integer>
+	<key>PayloadType</key>
+	<string>Configuration</string>
+	<key>PayloadOrganization</key>
+	<string>MYbloXX local configuration</string>
+	<key>PayloadDescription</key>
+	<string>October 2026 refresh of the proven DNS-only MYbloXX setup. System-wide encrypted DNS ad/tracker blocking using HaGeZi Pro through Control D. No PAC or HTTP proxy. The Pro tier is retained for strong blocking with lower risk of TikTok and app-function breakage.</string>
+	<key>PayloadRemovalDisallowed</key>
+	<false/>
+	<key>PayloadContent</key>
+	<array>
+		<dict>
+			<key>PayloadDisplayName</key>
+			<string>MYbloXX DNS — HaGeZi Pro (October 2026)</string>
+			<key>PayloadIdentifier</key>
+			<string>io.local.mybloxx.october2026.hagezi.pro.dns</string>
+			<key>PayloadUUID</key>
+			<string>24E13E1A-E8F9-4861-B186-123658B1C7D4</string>
+			<key>PayloadVersion</key>
+			<integer>1</integer>
+			<key>PayloadType</key>
+			<string>com.apple.dnsSettings.managed</string>
+			<key>DNSSettings</key>
+			<dict>
+				<key>DNSProtocol</key>
+				<string>HTTPS</string>
+				<key>ServerURL</key>
+				<string>https://freedns.controld.com/x-hagezi-pro</string>
+				<key>AllowFailover</key>
+				<false/>
+			</dict>
+			<key>ProhibitDisablement</key>
+			<false/>
+		</dict>
+	</array>
+</dict>
+</plist>

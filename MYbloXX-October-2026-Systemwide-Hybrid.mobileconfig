@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>PayloadContent</key>
+  <array>
+    <dict>
+      <key>PayloadDisplayName</key>
+      <string>MYbloXX — Systemwide PAC</string>
+      <key>PayloadIdentifier</key>
+      <string>com.adamtntaylor.mybloxx.october2026.systemwide.proxy</string>
+      <key>PayloadType</key>
+      <string>com.apple.proxy.http.global</string>
+      <key>PayloadUUID</key>
+      <string>72C24E55-8EC2-497F-8240-65B42D871B81</string>
+      <key>PayloadVersion</key>
+      <integer>1</integer>
+      <key>ProxyType</key>
+      <string>Auto</string>
+      <key>ProxyPACURL</key>
+      <string>https://raw.githubusercontent.com/adamtntaylor/mybloxx-september-refresh/main/mybloxx-october-systemwide.pac</string>
+      <key>ProxyPACFallbackAllowed</key>
+      <true/>
+      <key>ProxyCaptiveLoginAllowed</key>
+      <true/>
+    </dict>
+    <dict>
+      <key>PayloadDisplayName</key>
+      <string>MYbloXX — HaGeZi Pro DNS</string>
+      <key>PayloadIdentifier</key>
+      <string>com.adamtntaylor.mybloxx.october2026.systemwide.dns</string>
+      <key>PayloadType</key>
+      <string>com.apple.dnsSettings.managed</string>
+      <key>PayloadUUID</key>
+      <string>F1A044B5-430D-44A9-9C9B-1AE7360864B2</string>
+      <key>PayloadVersion</key>
+      <integer>1</integer>
+      <key>DNSSettings</key>
+      <dict>
+        <key>DNSProtocol</key>
+        <string>HTTPS</string>
+        <key>ServerURL</key>
+        <string>https://freedns.controld.com/x-hagezi-pro</string>
+        <key>AllowFailover</key>
+        <false/>
+      </dict>
+      <key>ProhibitDisablement</key>
+      <false/>
+    </dict>
+  </array>
+  <key>PayloadDescription</key>
+  <string>October 2026 hybrid MYbloXX-style blocker for a supervised iPhone. A compact Global HTTP Proxy PAC blocks known ad/tracker hosts across Wi-Fi and cellular HTTP/HTTPS traffic, while Control D HaGeZi Pro provides a secondary filtered-DNS layer where system DNS is used. shop.tiktok.com is explicitly allowed by the PAC.</string>
+  <key>PayloadDisplayName</key>
+  <string>MYbloXX October 2026 — Systemwide Hybrid</string>
+  <key>PayloadIdentifier</key>
+  <string>com.adamtntaylor.mybloxx.october2026.systemwide.profile</string>
+  <key>PayloadOrganization</key>
+  <string>MYbloXX October Refresh</string>
+  <key>PayloadRemovalDisallowed</key>
+  <false/>
+  <key>PayloadScope</key>
+  <string>System</string>
+  <key>PayloadType</key>
+  <string>Configuration</string>
+  <key>PayloadUUID</key>
+  <string>12FB5DDE-4D10-4E2C-B1F2-CA85F416904A</string>
+  <key>PayloadVersion</key>
+  <integer>1</integer>
+</dict>
+</plist>

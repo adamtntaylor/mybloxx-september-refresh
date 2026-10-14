@@ -1,52 +1,77 @@
-# MYbloXX iOS DNS Refresh
+# MYbloXX iOS Refresh
 
-Current active build: **October 2026 — HaGeZi Pro (TikTok Compatible)**
+Current recommended build: **October 2026 — Systemwide Hybrid**
 
-This project now follows the architecture that proved reliable on the iPhone in August/September 2026: a single managed encrypted-DNS payload using HaGeZi Pro through Control D.
+This project now combines the two approaches that worked best during testing:
 
-## Current profile
+1. a compact supervised **Global HTTP Proxy / PAC** for broad HTTP/HTTPS filtering across Wi-Fi and cellular
+2. **Control D + HaGeZi Pro DNS** as a secondary filtering layer wherever iOS is using the system DNS path
+
+## Recommended profile
 
 Install:
 
-`MYbloXX-October-Refresh-2026-HaGeZi-Pro-TikTok-Compatible.mobileconfig`
+`MYbloXX-October-2026-Systemwide-Hybrid.mobileconfig`
 
-The profile contains one payload:
+It contains:
 
+- `com.apple.proxy.http.global`
+- PAC URL: `https://raw.githubusercontent.com/adamtntaylor/mybloxx-september-refresh/main/mybloxx-october-systemwide.pac`
+- `ProxyType = Auto`
+- `ProxyPACFallbackAllowed = true`
+- `ProxyCaptiveLoginAllowed = true`
 - `com.apple.dnsSettings.managed`
-- DNS-over-HTTPS
-- Server: `https://freedns.controld.com/x-hagezi-pro`
+- DNS-over-HTTPS: `https://freedns.controld.com/x-hagezi-pro`
 - `AllowFailover = false`
 - `ProhibitDisablement = false`
 
-## Why DNS-only
+## PAC design
 
-The earlier September PAC experiment is retired from the active project. The working DNS-only design is intentionally simpler:
+The October PAC is intentionally compact compared with the failed megabyte-scale September experiment.
 
-- no Global HTTP Proxy
-- no PAC JavaScript
-- no localhost sinkhole
-- no locally compiled 50k–70k domain table
-- no GitHub Actions job required to rebuild blocklists
+It currently combines:
 
-Control D serves the current HaGeZi Pro resolver directly, so upstream list maintenance happens without regenerating or reinstalling this profile.
+- explicit host rules from the original MYbloXX PAC
+- a current high-confidence subset of HaGeZi LIGHT
+- major ad networks such as DoubleClick, Google Syndication, Criteo, Taboola, Outbrain, PubMatic, Rubicon, OpenX, Amazon Ads, and others
 
-## TikTok compatibility
+The host table is minimized by parent domain.
 
-The Pro tier is deliberately retained instead of Pro++ or Ultimate because it balances strong ad/tracker blocking with a lower risk of breaking app functionality and referral links. The August build using the same endpoint worked reliably with TikTok.
+Blocking behavior:
 
-This fixed public resolver cannot provide a user-specific per-domain allowlist. If TikTok Shop ever becomes blocked upstream, the correct fix is to reassess the resolver/tier rather than bolt a second PAC layer onto this profile.
+- blocked host → `PROXY 127.0.0.1:8021`
+- ordinary host → `DIRECT`
+- `shop.tiktok.com` → explicit `DIRECT` before block evaluation
+
+No third-party browsing proxy receives ordinary web traffic.
+
+## Why hybrid
+
+The DNS-only October profile remains available as a fallback:
+
+`MYbloXX-October-Refresh-2026-HaGeZi-Pro-TikTok-Compatible.mobileconfig`
+
+The hybrid profile is recommended when the goal is broader blocking on both Wi-Fi and cellular, especially when Private Relay / Limit IP Address Tracking is enabled.
+
+Apple Global HTTP Proxy applies to HTTP/HTTPS traffic that uses the system proxy path across Wi-Fi and cellular. It does not filter every possible packet or protocol. Apps using non-HTTP protocols, custom sockets, or networking that bypasses the system HTTP proxy can still escape PAC filtering.
+
+The DNS layer adds coverage for apps that use system DNS, but Private Relay or app-specific encrypted DNS can change that path.
 
 ## Verification
 
-After installation:
+After installing the hybrid profile:
 
-1. In iOS DNS Settings, select **MYbloXX DNS — HaGeZi Pro (October 2026)**.
-2. Open `https://controld.com/status` in Safari and confirm Control D is in use.
-3. Test a known ad-serving hostname such as `https://pagead2.googlesyndication.com`; it should fail to load.
-4. Confirm `https://shop.tiktok.com` and the TikTok app still work normally.
+1. Remove the older October DNS-only profile first to avoid two competing managed-DNS profiles.
+2. Confirm the new profile is installed under **VPN & Device Management**.
+3. Under DNS Settings, select **MYbloXX — HaGeZi Pro DNS** if iOS exposes it as selectable.
+4. Test `https://pagead2.googlesyndication.com` — it should fail.
+5. Test the same ad-heavy page once on Wi-Fi and once on cellular.
+6. Confirm `https://shop.tiktok.com` and TikTok Shop continue to work.
 
-Note: the bare `doubleclick.net` domain is not a reliable block test because HaGeZi intentionally allows some referral/link-tracking domains depending on tier.
+## Safety / availability tradeoff
+
+`ProxyPACFallbackAllowed = true` is intentional. If the PAC URL cannot be fetched temporarily, normal web access can continue instead of the device effectively losing HTTP/HTTPS connectivity. The downside is that filtering can temporarily fail open during a PAC fetch/evaluation failure.
 
 ## Project history
 
-The repository name still contains “september-refresh” for continuity. Git history retains the retired PAC experiments, but the current supported configuration is the DNS-only October profile above.
+The repository name still contains “september-refresh” for continuity. Git history retains the September experiments, but the October Systemwide Hybrid profile is the current recommended build.
